@@ -6,3 +6,5 @@ server = HTTPServer()
 
 # To activate your server.
 server.start()
+
+# Run your server.

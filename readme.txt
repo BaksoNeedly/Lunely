@@ -19,4 +19,10 @@ server = HTTPServer()
 server.start()
 
 3. Run your python file.
-python "examples/main.py"
+(WARN) this is only the example path.
+py "c:/examples/basic_server/main.py"
+
+4. Server activated.
+If it works, the terminal will show these outputs.
+'[SERVER] Listening on ('0.0.0.0', 8080)...'
+'> []'
