@@ -1,0 +1,6 @@
+"""HTTP and socket server defaults."""
+
+SERVER_HOST = "0.0.0.0"
+SERVER_PORT = 8080
+SERVER_ADDRESS = (SERVER_HOST, SERVER_PORT)
+BUFFER_SIZE = 100 * 1024 * 1024

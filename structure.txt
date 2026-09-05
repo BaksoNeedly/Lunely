@@ -1,0 +1,43 @@
+src/
+  simple_framework/
+    __init__.py
+    application.py
+
+    core/
+      lifecycle.py
+      exceptions.py
+      settings.py
+
+    http/
+      request.py
+      response.py
+      parser.py
+      router.py
+      server.py
+      middleware.py
+
+    websocket/
+      server.py
+      router.py
+      frame.py
+      handshake.py
+
+    session/
+      session.py
+      manager.py
+      backend.py
+
+    config/
+      settings.py
+
+    integrations/
+      email.py
+      storage.py
+
+    contrib/
+      postgres/
+      auth/
+
+tests/
+examples/
+docs/
