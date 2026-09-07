@@ -1,6 +1,6 @@
 readme.txt
 structure.txt
-dist/
+/dist/
 .vscode/
 .venv/
 build/
