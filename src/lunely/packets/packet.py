@@ -1,16 +1,18 @@
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 
 class Packet:
+    
+    @classmethod
+    def get_type(cls) -> str:
+        ...
 
     @abstractmethod
-    def get_type(self) -> str:
-        return self._type
-
-    @abstractmethod
-    def to_data(self) -> dict: pass
+    def to_data(self) -> dict[str, str]:
+        ...
 
     @staticmethod
     @abstractmethod
-    def from_data(data) -> Packet: pass
+    def from_data(data: dict[str, str]) -> Packet:
+        ...

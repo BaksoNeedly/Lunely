@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lunely — Global chat</title>
+    <title>Lunely — Global Chat</title>
     <style>
         :root {
             --bg: #f5f6fa;
@@ -34,6 +34,7 @@
             display: flex;
             flex-direction: column;
             width: min(100% - 32px, 1040px);
+            height: min(820px, calc(100vh - 48px));
             min-height: min(820px, calc(100vh - 48px));
             margin: 24px auto;
             overflow: hidden;
@@ -56,10 +57,27 @@
         .chat-intro h1 { margin: 0; font-size: clamp(24px, 3vw, 32px); letter-spacing: -.055em; }
         .chat-intro p { max-width: 420px; margin: 9px auto 0; color: var(--muted); font-size: 13px; line-height: 1.55; }
 
-        .messages { display: flex; flex: 1; flex-direction: column; gap: 18px; width: min(100%, 680px); margin: 0 auto; padding: 10px 24px 30px; overflow-y: auto; }
+        .messages {
+            display: flex;
+            flex: 1;
+            flex-direction: column;
+            gap: 18px;
+            width: min(100%, 680px);
+            min-height: 0;
+            margin: 0 auto;
+            padding: 10px 24px 30px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #c6c0f7 transparent;
+        }
+        .messages::-webkit-scrollbar { width: 8px; }
+        .messages::-webkit-scrollbar-track { background: transparent; }
+        .messages::-webkit-scrollbar-thumb { background: #c6c0f7; border: 2px solid transparent; border-radius: 999px; background-clip: padding-box; }
+        .messages::-webkit-scrollbar-thumb:hover { background: #a99ff0; border-width: 1px; }
         .day-divider { display: flex; align-items: center; gap: 12px; margin: 2px 0 4px; color: #b0b4c1; font-size: 10px; font-weight: 750; letter-spacing: .12em; text-transform: uppercase; }
         .day-divider::before, .day-divider::after { height: 1px; flex: 1; content: ""; background: var(--line); }
-        .message { display: flex; align-items: flex-end; gap: 10px; max-width: 82%; }
+        .system-message { align-self: center; max-width: 100%; padding: 6px 12px; color: #999eae; background: #f0f1f6; border-radius: 999px; font-size: 10px; font-weight: 700; letter-spacing: .02em; overflow-wrap: anywhere; text-align: center; }
+        .message { display: flex; align-items: flex-end; gap: 10px; max-width: 82%; min-width: 0; }
         .message.mine { align-self: flex-end; flex-direction: row-reverse; }
         .avatar { display: grid; width: 30px; height: 30px; flex: 0 0 30px; place-items: center; color: #5b4b28; background: #f6d989; border-radius: 10px; font-size: 11px; font-weight: 800; }
         .message:nth-of-type(2) .avatar { color: #3c5680; background: #c9ddfa; }
@@ -69,7 +87,7 @@
         .mine .message-meta { justify-content: flex-end; margin-right: 2px; }
         .message-name { color: #62687a; font-size: 11px; font-weight: 750; }
         .message-time { color: #b1b5c1; font-size: 10px; }
-        .bubble { padding: 11px 14px; color: #4c5060; background: #fff; border: 1px solid var(--line); border-radius: 6px 16px 16px 16px; font-size: 13px; line-height: 1.5; }
+        .bubble { padding: 11px 14px; color: #4c5060; background: #fff; border: 1px solid var(--line); border-radius: 6px 16px 16px 16px; font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
         .mine .bubble { color: #fff; background: var(--accent); border-color: var(--accent); border-radius: 16px 6px 16px 16px; box-shadow: 0 7px 14px rgba(105, 87, 232, .14); }
 
         .composer-wrap { padding: 14px 24px 24px; background: var(--surface); border-top: 1px solid var(--line); }
@@ -84,7 +102,7 @@
         .hint { margin: 10px 0 0; color: #b0b4c1; font-size: 10px; text-align: center; }
 
         @media (max-width: 620px) {
-            .app-shell { width: 100%; min-height: 100vh; margin: 0; border: 0; border-radius: 0; }
+            .app-shell { width: 100%; height: 100vh; min-height: 100vh; margin: 0; border: 0; border-radius: 0; }
             .topbar { padding: 17px 18px; }
             .chat-intro { padding: 28px 20px 16px; }
             .messages { padding: 8px 16px 24px; }
@@ -95,7 +113,7 @@
 </head>
 <body>
     <div class="app-shell">
-        <header class="topbar">
+        <header class="topbar" data-header>
             <div class="brand">
                 <div class="brand-mark" aria-hidden="true">✦</div>
                 <div>
@@ -103,78 +121,55 @@
                     <p class="brand-subtitle">Global chat</p>
                 </div>
             </div>
-            <div class="online-status"><span class="status-dot"></span><span>128 orang online</span></div>
+            <div class="online-status"><span class="status-dot"></span><span data-online-count>128 people online</span></div>
         </header>
 
-        <main class="chat">
+        <main class="chat" data-body>
             <section class="chat-intro">
-                <h1>Ngobrol bareng siapa aja.</h1>
-                <p>Masuk, tulis apa pun, dan ikut percakapan global. Tidak perlu room atau add contact.</p>
+                <h1>Chat with anyone.</h1>
+                <p>Join in, say anything, and be part of the global conversation. No room or contact list required.</p>
             </section>
 
-            <section class="messages" id="messages" aria-live="polite">
-                <div class="day-divider">Hari ini</div>
+            <section class="messages" data-messages aria-live="polite">
+                <!-- <div class="day-divider">Today</div>
                 <article class="message">
                     <div class="avatar" aria-hidden="true">NA</div>
                     <div class="message-content">
                         <div class="message-meta"><span class="message-name">Nadia</span><span class="message-time">10:42</span></div>
-                        <div class="bubble">Pagi semua! Ada yang lagi dengerin lagu bagus hari ini? 🎧</div>
+                        <div class="bubble">Good morning, everyone! Is anyone listening to anything good today? 🎧</div>
                     </div>
                 </article>
                 <article class="message">
                     <div class="avatar" aria-hidden="true">RA</div>
                     <div class="message-content">
                         <div class="message-meta"><span class="message-name">Raka</span><span class="message-time">10:43</span></div>
-                        <div class="bubble">Pagi! Aku baru nemu playlist buat nemenin kerja. Vibes-nya enak banget.</div>
+                        <div class="bubble">Morning! I just found a playlist for work. The vibes are really good.</div>
                     </div>
                 </article>
                 <article class="message mine">
                     <div class="avatar" aria-hidden="true">YO</div>
                     <div class="message-content">
-                        <div class="message-meta"><span class="message-name">Kamu</span><span class="message-time">10:44</span></div>
-                        <div class="bubble">Wah, share dong kalau boleh 😄</div>
+                        <div class="message-meta"><span class="message-name">You</span><span class="message-time">10:44</span></div>
+                        <div class="bubble">Nice, could you share it? 😄</div>
                     </div>
-                </article>
+                </article> -->
             </section>
         </main>
 
-        <footer class="composer-wrap">
-            <form class="composer" id="composer">
-                <input id="message-input" type="text" autocomplete="off" placeholder="Tulis pesan ke global chat..." aria-label="Tulis pesan">
-                <button class="send-button" type="submit" aria-label="Kirim pesan">
+        <footer class="composer-wrap" data-footer>
+            <form class="composer" data-composer>
+                <input data-message-input type="text" autocomplete="off" placeholder="Write a message to global chat..." aria-label="Write a message">
+                <button class="send-button" type="submit" aria-label="Send message">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <path d="M22 2 11 13"></path>
                         <path d="m22 2-7 20-4-9-9-4Z"></path>
                     </svg>
                 </button>
             </form>
-            <p class="hint">Tekan Enter untuk mengirim</p>
+            <p class="hint">Press Enter to send</p>
         </footer>
     </div>
 
-    <script>
-        const composer = document.querySelector('#composer');
-        const input = document.querySelector('#message-input');
-        const messages = document.querySelector('#messages');
-
-        composer.addEventListener('submit', (event) => {
-            event.preventDefault();
-            const text = input.value.trim();
-            if (!text) return;
-
-            const message = document.createElement('article');
-            message.className = 'message mine';
-            message.innerHTML = `
-                <div class="avatar" aria-hidden="true">YO</div>
-                <div class="message-content">
-                    <div class="message-meta"><span class="message-name">Kamu</span><span class="message-time">baru saja</span></div>
-                    <div class="bubble"></div>
-                </div>`;
-            message.querySelector('.bubble').textContent = text;
-            messages.appendChild(message);
-            input.value = '';
-            messages.scrollTop = messages.scrollHeight;
-        });
-    </script>
+    <script type="module" src="dist/app.js"></script>
 </body>
 </html>

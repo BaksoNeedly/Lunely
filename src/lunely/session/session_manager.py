@@ -14,7 +14,7 @@ class SessionManager:
 
     @classmethod
     def get_by_name(cls, username: str) -> Session | None:
-        for id, session_ in cls.get_all().items():
+        for _, session_ in cls.get_all().items():
             if session_.get_username().strip().lower() == username.strip().lower():
                 return session_
         return None
@@ -24,8 +24,8 @@ class SessionManager:
         return cls._sessions
 
     @classmethod
-    def set(cls, session_id: str, session: Session) -> None:
-        cls._sessions[session_id] = session
+    def set(cls, session: Session) -> None:
+        cls._sessions[session.get_session_id()] = session
 
     @classmethod
     def remove(cls, session_id: str) -> Session | None:
@@ -44,7 +44,7 @@ class SessionManager:
         return len(cls._sessions)
 
     @classmethod
-    def generate_id(cls, ) -> int:
+    def generate_id(cls, ) -> str:
         return secrets.token_urlsafe(32)
     
     @classmethod
@@ -61,5 +61,7 @@ class SessionManager:
     def extract_session(request: HTTPRequest) -> Session | None:
         cookie = str(request.get_headers().get("cookie"))
         session_id = Cookie.parse(cookie.encode(app_config.ENCODING)).get("session_id")
-        session = SessionManager.get(session_id)
+        if not session_id:
+            return None
+        session = SessionManager.get(str(session_id))
         return session

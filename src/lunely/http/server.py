@@ -1,8 +1,12 @@
 from lunely.config import server_config
 import socket
 import threading
+from lunely.hooks.request_hooks import RequestHooks
 from lunely.http.request import HTTPRequest
 from lunely.http.router import HTTPRouter
+from lunely.middleware.pipeline import MiddlewarePipeline
+from lunely.registrars.middleware import MiddlewareRegistrar
+from lunely.registrars.route import RouteRegistrar
 from lunely.websocket.server import WebSocketServer
 from pathlib import Path
 from lunely.http.response import HTTPResponse
@@ -18,6 +22,17 @@ class HTTPServer:
         self._router = HTTPRouter()        
         self._websocket_server = WebSocketServer()
         
+        self._request_hooks = RequestHooks()
+        
+        self._middleware_pipeline = MiddlewarePipeline()
+        
+        # Registrar
+        route_registrar = RouteRegistrar(self._router)
+        route_registrar.register()
+        
+        middleware_registrar = MiddlewareRegistrar(self._middleware_pipeline)
+        middleware_registrar.register()
+        
         self._address = (host, port)
         
     def get_lifecycle(self):
@@ -31,6 +46,12 @@ class HTTPServer:
     
     def get_websocket_server(self) -> WebSocketServer:
         return self._websocket_server
+    
+    def get_request_hooks(self) -> RequestHooks:
+        return self._request_hooks
+    
+    def get_middleware_pipeline(self) -> MiddlewarePipeline:
+        return self._middleware_pipeline
 
     def start(self) -> None:
         self._server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -54,6 +75,7 @@ class HTTPServer:
         self.info("Listening on " + f"{self._address}...")
         threading.Thread(target=self.on_command).start()
         threading.Thread(target=self.time_run).start()
+        
         self._lifecycle.run_startup()
 
     def on_disable(self) -> None:
@@ -75,23 +97,34 @@ class HTTPServer:
             },
             body="<h1>404 Not Found</h1>"
         )
-
+        
         if data:
             request = HTTPRequest(data, client_socket)
+            
+            # Request hooks
+            for hook in self._request_hooks.get_all():
+                hook(request) 
 
             headers = request.get_headers()
             upgrade = headers.get("upgrade")
             connection = headers.get("connection")
-
+            
             if upgrade and connection:
                 self._websocket_server.handle(client_socket, request)
                 return
 
             # self.write_log(data.decode(app_config.ENCODING))
-            router_result = self.get_router().route(request)
-
-            if router_result:
-                response = router_result
+            endpoint = self.get_router().endpoint(request)
+            
+            middleware = self._middleware_pipeline.handle(
+                request,
+                endpoint
+            )
+            
+            if middleware:
+                response = middleware
+            else:
+                print("Failed to receive:", f"'{request.get_method()}',",f"'{request.get_url().get_path()}'")
  
             # DEBUG
             # print("HTTPSERVER: ", SessionManager.size(), "sessions.")
@@ -101,11 +134,11 @@ class HTTPServer:
             # print("REQUEST BODY:", request.get_body())
             # print("RESPONSE BODY:", response.decode().split("\r\n\r\n",1)[1])
             # print(request.get_data(), "\r\n")
-            # print(response.decode(app_config.ENCODING), "\r\n")        
-
+            # print(response.decode(app_config.ENCODING), "\r\n")
+            
         client_socket.sendall(response.build())
         client_socket.close()
-
+        
     def time_run(self):
         while True:
             time.sleep(1)

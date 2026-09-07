@@ -26,7 +26,4 @@ class WebSocketBroadcaster:
             if id in excluding:
                 continue
 
-            if not client_.get_session().is_authenticated():
-                continue
-
             client_.get_socket().sendall(frame)

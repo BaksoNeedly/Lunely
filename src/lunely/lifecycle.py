@@ -1,12 +1,14 @@
 from collections.abc import Callable
 
+Handler = Callable[[], any]
+
 class Lifecycle:
     
     def __init__(self):
-        self._startup_hooks = []
-        self._shutdown_hooks = []
+        self._startup_hooks: list[Handler] = []
+        self._shutdown_hooks: list[Handler] = []
         
-    def add_shutdown_hook(self, function: Callable) -> Callable:
+    def add_shutdown_hook(self, function: Handler) -> Handler:
         self._shutdown_hooks.append(function)
         return function
     
@@ -14,7 +16,7 @@ class Lifecycle:
         for function in reversed(self._shutdown_hooks):
             function()
             
-    def add_startup_hook(self, function: Callable) -> Callable:
+    def add_startup_hook(self, function: Handler) -> Handler:
         self._startup_hooks.append(function)
         return function
     

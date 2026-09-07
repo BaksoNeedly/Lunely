@@ -1,10 +1,12 @@
 from lunely.config import app_config, server_config
 import socket
 
+from lunely.models.parsed_request import ParsedRequest
+
 class HTTPParser:
 
     @staticmethod
-    def parse_request(request: bytes, client_socket: socket.socket) -> dict:
+    def parse_request(request: bytes, client_socket: socket.socket) -> ParsedRequest:
         header_end = request.find(b"\r\n\r\n")
         header = request[:header_end]
         header_text = header.decode(app_config.ENCODING)
@@ -20,7 +22,7 @@ class HTTPParser:
 
         body = request[header_end + 4:]
 
-        headers = {}
+        headers: dict[str, str] = {}
         for line in lines[1:]:
             key, value = line.split(":", 1)
             headers[key.strip().lower()] = value.strip()

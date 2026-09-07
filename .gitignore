@@ -31,3 +31,15 @@ htmlcov/
 # OS files
 .DS_Store
 Thumbs.db
+
+node_modules/
+package-lock.json
+package.json
+
+basic_chat_app/
+basic_web/
+
+tests/
+
+scripts/
+database/
