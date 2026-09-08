@@ -12,6 +12,8 @@ class HTTPRouter:
         self._routes: dict[tuple[str, str], Handler] = {}
         self._dynamic_handlers = {}
 
+    def get_all(self) -> dict[tuple[str,str], Handler]:
+        return self._routes
 
     def get(self, path: str, handler: Handler):
         self.register("GET", path, handler)

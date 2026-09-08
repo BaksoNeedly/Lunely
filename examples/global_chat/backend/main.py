@@ -4,7 +4,6 @@ from lunely.http.response import HTTPResponse
 from lunely.http.server import HTTPServer
 from lunely.packets.template import TemplatePacket
 from lunely.session.client_session import ClientSession
-from lunely.websocket.broadcaster import WebSocketBroadcaster
 
 
 server = HTTPServer()
@@ -50,6 +49,7 @@ route.get("/dist/footer.js", serve_footer)
 
 websocket = server.get_websocket_server()
 ws_route = websocket.get_router()
+broadcaster = websocket.get_broadcaster()
 
 def send_message(client_session: ClientSession, payload: dict[str, str]) -> None:
     content = payload["content"]
@@ -59,7 +59,7 @@ def send_message(client_session: ClientSession, payload: dict[str, str]) -> None
             "content": content
         }
     )
-    WebSocketBroadcaster.send_to_all(packet, [client_session.get_session_id()])
+    broadcaster.send_to_all(packet, [client_session.get_session_id()])
 
 def user_join(client_session: ClientSession, payload: dict[str, str]) -> None:
     packet = TemplatePacket(
@@ -68,7 +68,7 @@ def user_join(client_session: ClientSession, payload: dict[str, str]) -> None:
             "username": "Anonymous"
         }
     )
-    WebSocketBroadcaster.send_to_all(packet)
+    broadcaster.send_to_all(packet)
     
 def user_join_message(client_session: ClientSession, payload: dict[str, str]) -> None:
     pass

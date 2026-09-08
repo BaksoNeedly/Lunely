@@ -6,11 +6,12 @@ from lunely.http.request import HTTPRequest
 from lunely.http.router import HTTPRouter
 from lunely.middleware.pipeline import MiddlewarePipeline
 from lunely.registrars.middleware import MiddlewareRegistrar
-from lunely.registrars.route import RouteRegistrar
+from lunely.session.session_manager import SessionManager
 from lunely.websocket.server import WebSocketServer
 from pathlib import Path
 from lunely.http.response import HTTPResponse
 from ..lifecycle import Lifecycle
+from lunely.logging import log_info, log_warning, logger
 
 import time
 
@@ -19,18 +20,19 @@ class HTTPServer:
     def __init__(self, host: str = "0.0.0.0", port: int = 8080):
         self._lifecycle = Lifecycle()
         self._status = False
-        self._router = HTTPRouter()        
-        self._websocket_server = WebSocketServer()
+        self._router = HTTPRouter()
+        self._session_manager = SessionManager()
+        self._websocket_server = WebSocketServer(self._session_manager)
         
         self._request_hooks = RequestHooks()
         
         self._middleware_pipeline = MiddlewarePipeline()
         
         # Registrar
-        route_registrar = RouteRegistrar(self._router)
-        route_registrar.register()
-        
-        middleware_registrar = MiddlewareRegistrar(self._middleware_pipeline)
+        middleware_registrar = MiddlewareRegistrar(
+            self._middleware_pipeline,
+            self._session_manager
+        )
         middleware_registrar.register()
         
         self._address = (host, port)
@@ -46,6 +48,9 @@ class HTTPServer:
     
     def get_websocket_server(self) -> WebSocketServer:
         return self._websocket_server
+
+    def get_session_manager(self) -> SessionManager:
+        return self._session_manager
     
     def get_request_hooks(self) -> RequestHooks:
         return self._request_hooks
@@ -58,7 +63,7 @@ class HTTPServer:
         self._server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self._server.bind(self._address)
         self._server.listen()
-        self._status = True        
+        self._status = True
 
         self.on_enable()
 
@@ -72,7 +77,11 @@ class HTTPServer:
         self._server.close()
     
     def on_enable(self) -> None:
-        self.info("Listening on " + f"{self._address}...")
+        log_info("Listening on " + f"{self._address}...")
+        log_info(f"{len(self._router.get_all())} routes are registered.")
+        log_info(f"{len(self._request_hooks.get_all())} request hooks are registered.")
+        log_info(f"{len(self._middleware_pipeline.get_all())} middlewares are registered.")
+        
         threading.Thread(target=self.on_command).start()
         threading.Thread(target=self.time_run).start()
         
@@ -88,6 +97,7 @@ class HTTPServer:
             if not raw:
                 break
             data += raw
+        
 
         response = HTTPResponse(
             status="404",
@@ -104,6 +114,18 @@ class HTTPServer:
             # Request hooks
             for hook in self._request_hooks.get_all():
                 hook(request) 
+            
+            session = self._session_manager.extract_session(request)
+            session_id = session.get_session_id() if session else None
+            if session_id:
+                session_label = f"'{session_id[:8]}...'"
+            else:
+                session_label = "'UNKNOWN SESSION'"
+            
+            log_info(
+                f"{session_label} Request: '{request.get_url().get_full_path()}'",
+                "HTTP"
+            )
 
             headers = request.get_headers()
             upgrade = headers.get("upgrade")
@@ -124,7 +146,7 @@ class HTTPServer:
             if middleware:
                 response = middleware
             else:
-                print("Failed to receive:", f"'{request.get_method()}',",f"'{request.get_url().get_path()}'")
+                log_warning(f"Failed to receive: '{request.get_method()}', '{request.get_url().get_path()}'")
  
             # DEBUG
             # print("HTTPSERVER: ", SessionManager.size(), "sessions.")
@@ -160,7 +182,7 @@ class HTTPServer:
 
 
     def info(self, msg: str) -> None:
-        print("[SERVER]", msg)
+        logger.info(msg)
 
     def write_log(self, log: str):
         with open(Path(__file__).parent / "log.txt", "w", encoding="utf-8") as file:

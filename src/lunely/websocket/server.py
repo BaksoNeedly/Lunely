@@ -3,6 +3,7 @@ from collections.abc import Callable
 from lunely.config import server_config
 import socket
 
+from lunely.logging import log_info
 from lunely.session.session import Session
 from ..http.request import HTTPRequest
 from ..session.session_manager import SessionManager
@@ -12,18 +13,28 @@ from .router import WebSocketRouter
 
 from ..session.client_session import ClientSession
 from ..session.client_session_manager import ClientSessionManager
+from .broadcaster import WebSocketBroadcaster
 
 SessionHandler = Callable[[Session], None]
 
 class WebSocketServer:
     
-    def __init__(self):
+    def __init__(self, session_manager: SessionManager):
+        self._session_manager = session_manager
+        self._client_session_manager = ClientSessionManager()
+        self._broadcaster = WebSocketBroadcaster(self._client_session_manager)
         self._router = WebSocketRouter()
         
         self._access_hooks: list[SessionHandler] = []
         
     def get_router(self) -> WebSocketRouter:
         return self._router
+
+    def get_client_session_manager(self) -> ClientSessionManager:
+        return self._client_session_manager
+
+    def get_broadcaster(self) -> WebSocketBroadcaster:
+        return self._broadcaster
     
     def get_access_hooks(self) -> list[SessionHandler]:
         return self._access_hooks
@@ -34,7 +45,7 @@ class WebSocketServer:
     
     def handle(self, client_socket: socket.socket, request: HTTPRequest) -> None:
         WebSocketHandshake.perform(client_socket, request)
-        session = SessionManager.extract_session(request)
+        session = self._session_manager.extract_session(request)
         if not session:
             client_socket.close()
             print("Session not found.")
@@ -48,11 +59,15 @@ class WebSocketServer:
             
         
         client_session = ClientSession(client_socket, session)
-        ClientSessionManager.set(client_session)
+        self._client_session_manager.set(client_session)
+        session_id = session.get_session_id()
+        if session_id:
+            session_label = f"'{session_id[:8]}...'"
+        else:
+            session_label = "'UNKNOWN SESSION'"
         
-        
-        print(client_session.get_username(), "connected.")
-        print(len(ClientSessionManager.get_all()), "Users.")
+        log_info(f"{session_label} is connected.", "WEBSOCKET")
+        log_info(f"{len(self._client_session_manager.get_all())} User(s) are connected.", "WEBSOCKET")
         
         try:
             while True:
@@ -65,7 +80,6 @@ class WebSocketServer:
 
                 opcode = raw_frame[0] & 0b00001111
                 if opcode == 0b00001000: # Close frame
-                    print("CLOSE FRAME DETECTED.")
                     break
 
                 self._router.route(raw_frame, client_session)
@@ -79,5 +93,5 @@ class WebSocketServer:
         except Exception as e:
             print(f"Error occurred while handling WebSocket connection: {e}")
         finally:
-            ClientSessionManager.close(client_session)
-            print("CLOSED")
+            self._client_session_manager.close(client_session)
+            log_info(f"{session_label} is closed.", "WEBSOCKET")

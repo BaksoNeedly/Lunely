@@ -12,6 +12,9 @@ class MiddlewarePipeline:
     
     def __init__(self) -> None:
         self._hooks: list[Middleware] = []
+        
+    def get_all(self) -> list[Middleware]:
+        return self._hooks
     
     def add(self, middleware: Middleware) -> Middleware:
         self._hooks.append(middleware)
