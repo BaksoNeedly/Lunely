@@ -1,6 +1,7 @@
 from lunely.config import server_config
 import socket
 import threading
+from lunely.hooks.error import ErrorHooks
 from lunely.hooks.request_hooks import RequestHooks
 from lunely.http.request import HTTPRequest
 from lunely.http.router import HTTPRouter
@@ -34,6 +35,7 @@ class HTTPServer:
         self._websocket_server = WebSocketServer(self._session_manager, server_name=server_name)
         
         self._request_hooks = RequestHooks()
+        self._error_hooks = ErrorHooks()
         
         self._middleware_pipeline = MiddlewarePipeline()
         
@@ -124,43 +126,63 @@ class HTTPServer:
         )
         
         if data:
-            request = HTTPRequest(data, client_socket)
-            
-            # Request hooks
-            for hook in self._request_hooks.get_all():
-                hook(request) 
-            
-            session = self._session_manager.extract_session(request)
-            session_id = session.get_session_id() if session else None
-            if session_id:
-                session_label = f"'{session_id[:8]}...'"
-            else:
-                session_label = "'UNKNOWN SESSION'"
-            
-            self._logger.info(
-                f"{session_label} Request: '{request.get_url().get_full_path()}'"
-            )
-
-            headers = request.get_headers()
-            upgrade = headers.get("upgrade")
-            connection = headers.get("connection")
-            
-            if upgrade and connection:
-                self._websocket_server.handle(client_socket, request)
-                return
-
-            # self.write_log(data.decode(app_config.ENCODING))
-            endpoint = self.get_router().endpoint(request)
-            
-            middleware = self._middleware_pipeline.handle(
-                request,
-                endpoint
-            )
-            
-            if middleware:
-                response = middleware
-            else:
-                self._logger.warning(f"Failed to receive: '{request.get_method()}', '{request.get_url().get_path()}'")
+            try:
+                request = HTTPRequest(data, client_socket)
+                            
+                # Request hooks
+                for hook in self._request_hooks.get_all():
+                    hook(request) 
+                
+                session = self._session_manager.extract_session(request)
+                session_id = session.get_session_id() if session else None
+                if session_id:
+                    session_label = f"'{session_id[:8]}...'"
+                else:
+                    session_label = "'UNKNOWN SESSION'"
+                
+                self._logger.info(
+                    f"{session_label} Request: '{request.get_url().get_full_path()}'"
+                )
+    
+                headers = request.get_headers()
+                upgrade = headers.get("upgrade")
+                connection = headers.get("connection")
+                
+                if upgrade and connection:
+                    self._websocket_server.handle(client_socket, request)
+                    return
+    
+                # self.write_log(data.decode(app_config.ENCODING))
+                endpoint = self.get_router().endpoint(request)
+                
+                middleware = self._middleware_pipeline.handle(
+                    request,
+                    endpoint
+                )
+                
+                if middleware:
+                    response = middleware
+                else:
+                    self._logger.warning(f"Failed to receive: '{request.get_method()}', '{request.get_url().get_path()}'")
+            except Exception as exc:
+                tb = exc.__traceback__
+                while tb is not None:
+                    self._logger.error(
+                        f"{exc.__class__.__name__} "
+                        f"@ {tb.tb_frame.f_code.co_filename}:{tb.tb_lineno}"
+                    )
+                    tb = tb.tb_next
+                
+                # Error hooks
+                for hook in self._error_hooks.get_all():
+                    hook(exc)
+                
+                response = HTTPResponse(
+                    status="505",
+                    reason_phrase="Internal Server Error",
+                    headers={"Content-Type": "text/plain; charset=utf-8"},
+                    body="Internal Server Error"
+                )
  
             # DEBUG
             # print("HTTPSERVER: ", SessionManager.size(), "sessions.")
