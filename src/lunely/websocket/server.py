@@ -7,6 +7,7 @@ from lunely.logging import get_logger
 from lunely.session.session import Session
 from ..http.request import HTTPRequest
 from ..session.session_manager import SessionManager
+from ..hooks.websocket_hooks import WebSocketHooks
 
 from .handshake import WebSocketHandshake
 from .router import WebSocketRouter
@@ -15,7 +16,7 @@ from ..session.client_session import ClientSession
 from ..session.client_session_manager import ClientSessionManager
 from .broadcaster import WebSocketBroadcaster
 
-SessionHandler = Callable[[Session], None]
+SessionHandler = Callable[[Session], bool]
 
 class WebSocketServer:
     
@@ -27,6 +28,7 @@ class WebSocketServer:
         self._logger = get_logger(server_name)
         
         self._access_hooks: list[SessionHandler] = []
+        self._websocket_hooks = WebSocketHooks()
         
     def get_router(self) -> WebSocketRouter:
         return self._router
@@ -36,6 +38,12 @@ class WebSocketServer:
 
     def get_broadcaster(self) -> WebSocketBroadcaster:
         return self._broadcaster
+
+    def get_websocket_hooks(self) -> WebSocketHooks:
+        return self._websocket_hooks
+    
+    def add_websocket_hook(self, hook: SessionHandler) -> SessionHandler:
+        return self._websocket_hooks.add(hook)
     
     def get_access_hooks(self) -> list[SessionHandler]:
         return self._access_hooks
@@ -56,6 +64,12 @@ class WebSocketServer:
             if not hook(session):
                 client_socket.close()
                 print("Access denied.")
+                return
+
+        for hook in self._websocket_hooks.get_all():
+            if not hook(session):
+                client_socket.close()
+                print("WebSocket hook denied.")
                 return
             
         
