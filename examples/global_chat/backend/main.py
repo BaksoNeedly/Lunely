@@ -6,7 +6,10 @@ from lunely.packets.template import TemplatePacket
 from lunely.session.client_session import ClientSession
 
 
-server = HTTPServer()
+server = HTTPServer(
+    server_name="Global Chat",
+    server_id="global_chat"
+)
 route = server.get_router()
 
 path = Path(__file__).resolve().parent

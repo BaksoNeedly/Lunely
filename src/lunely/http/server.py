@@ -17,7 +17,13 @@ import time
 
 class HTTPServer:
 
-    def __init__(self, host: str = "0.0.0.0", port: int = 8080):
+    def __init__(
+        self, 
+        host: str = "0.0.0.0", 
+        port: int = 8080,
+        server_name: str = "Lunely Server",
+        server_id: str = "lunely"
+    ):
         self._lifecycle = Lifecycle()
         self._status = False
         self._router = HTTPRouter()
@@ -36,6 +42,14 @@ class HTTPServer:
         middleware_registrar.register()
         
         self._address = (host, port)
+        self._name = server_name
+        self._id = server_id
+        
+    def get_name(self) -> str:
+        return self._name
+    
+    def get_id(self) -> str:
+        return self._id
         
     def get_lifecycle(self):
         return self._lifecycle
