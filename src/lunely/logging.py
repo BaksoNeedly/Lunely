@@ -11,7 +11,7 @@ def get_logger(server_name: str):
     return logging.getLogger(f"[Lunely][{server_name}]")
 
 
-logger = get_logger("Lunely")
+logger = get_logger("MONITOR")
 
 
 def log_info(message: str, tag: str | None = None, server_name: str = "Lunely") -> None:
