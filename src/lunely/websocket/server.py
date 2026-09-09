@@ -3,7 +3,7 @@ from collections.abc import Callable
 from lunely.config import server_config
 import socket
 
-from lunely.logging import log_info
+from lunely.logging import get_logger
 from lunely.session.session import Session
 from ..http.request import HTTPRequest
 from ..session.session_manager import SessionManager
@@ -19,11 +19,12 @@ SessionHandler = Callable[[Session], None]
 
 class WebSocketServer:
     
-    def __init__(self, session_manager: SessionManager):
+    def __init__(self, session_manager: SessionManager, server_name: str = "MONITOR"):
         self._session_manager = session_manager
         self._client_session_manager = ClientSessionManager()
         self._broadcaster = WebSocketBroadcaster(self._client_session_manager)
         self._router = WebSocketRouter()
+        self._logger = get_logger(server_name)
         
         self._access_hooks: list[SessionHandler] = []
         
@@ -66,8 +67,8 @@ class WebSocketServer:
         else:
             session_label = "'UNKNOWN SESSION'"
         
-        log_info(f"{session_label} is connected.", "WEBSOCKET")
-        log_info(f"{len(self._client_session_manager.get_all())} User(s) are connected.", "WEBSOCKET")
+        self._logger.info(f"{session_label} is connected.")
+        self._logger.info(f"{len(self._client_session_manager.get_all())} User(s) are connected.")
         
         try:
             while True:
@@ -94,4 +95,4 @@ class WebSocketServer:
             print(f"Error occurred while handling WebSocket connection: {e}")
         finally:
             self._client_session_manager.close(client_session)
-            log_info(f"{session_label} is closed.", "WEBSOCKET")
+            self._logger.info(f"{session_label} is closed.")

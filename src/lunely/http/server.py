@@ -11,7 +11,7 @@ from lunely.websocket.server import WebSocketServer
 from pathlib import Path
 from lunely.http.response import HTTPResponse
 from ..lifecycle import Lifecycle
-from lunely.logging import log_info, log_warning, logger
+from lunely.logging import get_logger
 
 import time
 
@@ -28,7 +28,10 @@ class HTTPServer:
         self._status = False
         self._router = HTTPRouter()
         self._session_manager = SessionManager()
-        self._websocket_server = WebSocketServer(self._session_manager)
+        self._name = server_name
+        self._id = server_id
+        self._logger = get_logger(server_name)
+        self._websocket_server = WebSocketServer(self._session_manager, server_name=server_name)
         
         self._request_hooks = RequestHooks()
         
@@ -42,8 +45,6 @@ class HTTPServer:
         middleware_registrar.register()
         
         self._address = (host, port)
-        self._name = server_name
-        self._id = server_id
         
     def get_name(self) -> str:
         return self._name
@@ -91,10 +92,10 @@ class HTTPServer:
         self._server.close()
     
     def on_enable(self) -> None:
-        log_info("Listening on " + f"{self._address}...")
-        log_info(f"{len(self._router.get_all())} routes are registered.")
-        log_info(f"{len(self._request_hooks.get_all())} request hooks are registered.")
-        log_info(f"{len(self._middleware_pipeline.get_all())} middlewares are registered.")
+        self._logger.info("Listening on " + f"{self._address}...")
+        self._logger.info(f"{len(self._router.get_all())} routes are registered.")
+        self._logger.info(f"{len(self._request_hooks.get_all())} request hooks are registered.")
+        self._logger.info(f"{len(self._middleware_pipeline.get_all())} middlewares are registered.")
         
         threading.Thread(target=self.on_command).start()
         threading.Thread(target=self.time_run).start()
@@ -136,9 +137,8 @@ class HTTPServer:
             else:
                 session_label = "'UNKNOWN SESSION'"
             
-            log_info(
-                f"{session_label} Request: '{request.get_url().get_full_path()}'",
-                "HTTP"
+            self._logger.info(
+                f"{session_label} Request: '{request.get_url().get_full_path()}'"
             )
 
             headers = request.get_headers()
@@ -160,7 +160,7 @@ class HTTPServer:
             if middleware:
                 response = middleware
             else:
-                log_warning(f"Failed to receive: '{request.get_method()}', '{request.get_url().get_path()}'")
+                self._logger.warning(f"Failed to receive: '{request.get_method()}', '{request.get_url().get_path()}'")
  
             # DEBUG
             # print("HTTPSERVER: ", SessionManager.size(), "sessions.")
@@ -196,7 +196,7 @@ class HTTPServer:
 
 
     def info(self, msg: str) -> None:
-        logger.info(msg)
+        self._logger.info(msg)
 
     def write_log(self, log: str):
         with open(Path(__file__).parent / "log.txt", "w", encoding="utf-8") as file:
