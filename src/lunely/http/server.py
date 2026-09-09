@@ -72,6 +72,9 @@ class HTTPServer:
     def get_request_hooks(self) -> RequestHooks:
         return self._request_hooks
     
+    def get_error_hooks(self) -> ErrorHooks:
+        return self._error_hooks
+    
     def get_middleware_pipeline(self) -> MiddlewarePipeline:
         return self._middleware_pipeline
 
