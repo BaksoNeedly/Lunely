@@ -103,6 +103,8 @@ class HTTPServer:
         self._logger.info(f"{len(self._middleware_pipeline.get_all())} middlewares are registered.")
         self._logger.info(f"{len(self._error_hooks.get_all())} error hooks are registered.")
         self._logger.info(f"{len(self._session_manager.get_session_hooks().get_all())} session hooks are registered.")
+        self._logger.info(f"{len(self._websocket_server.get_access_hooks())} websocket session access hooks are registered.")
+        self._logger.info(f"{len(self._websocket_server.get_websocket_hooks().get_all())} websocket session hooks are registered.")
         
         threading.Thread(target=self.on_command).start()
         threading.Thread(target=self.time_run).start()
