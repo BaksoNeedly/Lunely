@@ -1,0 +1,7 @@
+HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf-8
+Content-Length: 42
+Cache-Control: no-cache
+Set-Cookie: session=abc123; Path=/; HttpOnly; SameSite=Lax
+
+{"message":"success","data":{"id":1}}

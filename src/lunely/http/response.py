@@ -108,8 +108,6 @@ class HTTPResponse:
         
         self.set_header("Content-Length", str(len(body)))
         
-        print(body)
-        
         for key, value in self._headers.items():
             response += f"{key}: {value}\r\n".encode(app_config.ENCODING)
         response += b"\r\n"
