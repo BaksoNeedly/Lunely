@@ -1,8 +1,8 @@
 from typing import Callable
 
-from lunely.session.session import Session
+from lunely.session.client_session import ClientSession
 
-Handler = Callable[[Session], bool]
+Handler = Callable[[ClientSession], bool]
 
 
 class WebSocketHooks:

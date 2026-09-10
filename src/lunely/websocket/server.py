@@ -17,6 +17,7 @@ from ..session.client_session_manager import ClientSessionManager
 from .broadcaster import WebSocketBroadcaster
 
 SessionHandler = Callable[[Session], bool]
+ClientHandler = Callable[[ClientSession], bool]
 
 class WebSocketServer:
     
@@ -42,7 +43,7 @@ class WebSocketServer:
     def get_websocket_hooks(self) -> WebSocketHooks:
         return self._websocket_hooks
     
-    def add_websocket_hook(self, hook: SessionHandler) -> SessionHandler:
+    def add_websocket_hook(self, hook: ClientHandler) -> ClientHandler:
         return self._websocket_hooks.add(hook)
     
     def get_access_hooks(self) -> list[SessionHandler]:
@@ -66,14 +67,13 @@ class WebSocketServer:
                 print("Access denied.")
                 return
 
+        client_session = ClientSession(client_socket, session)
         for hook in self._websocket_hooks.get_all():
-            if not hook(session):
+            if not hook(client_session):
                 client_socket.close()
                 print("WebSocket hook denied.")
                 return
-            
         
-        client_session = ClientSession(client_socket, session)
         self._client_session_manager.set(client_session)
         session_id = session.get_session_id()
         if session_id:
