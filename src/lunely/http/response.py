@@ -2,17 +2,25 @@ from typing import Self
 
 from lunely.config import app_config
 from lunely.cookie.cookie import Cookie
+from lunely.models.content_type import ContentType
 from lunely.models.same_site import SameSite
 
 class HTTPResponse:
 
-    def __init__(self, version: str = "HTTP/1.1", status: str="200", reason_phrase: str = "OK", headers: dict[str, str] | None = None, body: str | None = None):
+    def __init__(
+        self, 
+        version: str = "HTTP/1.1", 
+        status: str="200", 
+        reason_phrase: str = "OK", 
+        headers: dict[str, str] | None = None, 
+        body: str | None = None
+    ):
         self._version = version
         self._status = status
         self._reason_phrase = reason_phrase
         self._headers: dict[str, str] = headers or {}
+        
         self._body = body or ""
-
         self._response = (
             f"{self._version} "
             f"{self._status} "
@@ -33,6 +41,25 @@ class HTTPResponse:
     
     def set_header(self, key: str, value: str) -> Self:
         self._headers[key] = value
+        return self
+    
+    def set_content_type(
+        self, 
+        content_type: ContentType, 
+        charset: str | None = "utf-8", 
+        boundary: str | None = None
+    ):
+        value = content_type.value
+        params: list[str] = []
+        if charset:
+            params.append(f"charset={charset}")
+        if boundary:
+            params.append(f"boundary={boundary}")
+            
+        if params:
+            value += "; " + "; ".join(params)
+            
+        self.set_header("Content-Type", value)
         return self
     
     def set_cookie(
@@ -70,18 +97,44 @@ class HTTPResponse:
     def build(self) -> bytes:
         response = self._response.encode(app_config.ENCODING)
         
+        body = b""
+                
+        if self._body:
+            body = self._body.encode(app_config.ENCODING)
+        elif isinstance(self._body, bytes):
+            body = self._body
+        else:
+            body = str(self._body).encode(app_config.ENCODING)        
+        
+        self.set_header("Content-Length", str(len(body)))
+        
+        print(body)
+        
         for key, value in self._headers.items():
             response += f"{key}: {value}\r\n".encode(app_config.ENCODING)
         response += b"\r\n"
         
-        if self._body:
-            response += self._body.encode(app_config.ENCODING)
-        elif isinstance(self._body, bytes):
-            response += self._body
-        else:
-            response += str(self._body).encode(app_config.ENCODING)
-            
+        response += body
+        
         return response
     
     def is_not_found(self) -> bool:
         return self.get_status() == "404"
+    
+class HTTPResponseHeaders:
+    pass
+    
+class JSONResponse(HTTPResponse):
+    def __init__(
+        self,
+        version: str = "HTTP/1.1",
+        status: str = "200", 
+        reason_phrase: str = "OK", 
+        headers: dict[str, str] | None = None,
+        body: str | None = None
+    ):
+        super().__init__(version, status, reason_phrase, headers, body)
+        
+        self.set_content_type(
+            ContentType.APPLICATION_JSON
+        )
