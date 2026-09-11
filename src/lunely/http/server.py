@@ -158,6 +158,9 @@ class HTTPServer:
                 if upgrade and connection:
                     self._websocket_server.handle(client_socket, request)
                     return
+                
+                if not self._router.is_route_by_request(request):
+                    self._logger.info(f"Path '{request.get_url().get_full_path()}' responded with nothing, as a result server respond '404 Not Found'")
     
                 # self.write_log(data.decode(app_config.ENCODING))
                 endpoint = self.get_router().endpoint(request)
@@ -201,7 +204,6 @@ class HTTPServer:
             # print("RESPONSE BODY:", response.decode().split("\r\n\r\n",1)[1])
             # print(request.get_data(), "\r\n")
             # print(response.decode(app_config.ENCODING), "\r\n")
-            
         client_socket.sendall(response.build())
         client_socket.close()
         

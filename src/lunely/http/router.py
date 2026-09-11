@@ -14,6 +14,12 @@ class HTTPRouter:
 
     def get_all(self) -> dict[tuple[str,str], Handler]:
         return self._routes
+    
+    def is_route(self, route: tuple[str, str]) -> bool:
+        return self._routes.get(route) is not None
+    
+    def is_route_by_request(self, request: HTTPRequest) -> bool:
+        return self.is_route((request.get_method(), request.get_url().get_path()))
 
     def get(self, path: str, handler: Handler):
         self.register("GET", path, handler)
