@@ -30,11 +30,23 @@ class HTTPResponse:
     def get_version(self) -> str:
         return self._version
     
+    def set_version(self, version: str) -> Self:
+        self._version = version
+        return self
+    
     def get_status(self) -> str:
         return self._status
     
+    def set_status(self, status: str) -> Self:
+        self._status = status
+        return self
+    
     def get_reason_phrase(self) -> str:
         return self._reason_phrase
+    
+    def set_reason_phrase(self, reason: str) -> Self:
+        self._reason_phrase = reason
+        return self
     
     def get_headers(self) -> dict[str, str]:
         return self._headers
