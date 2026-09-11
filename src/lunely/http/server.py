@@ -176,7 +176,8 @@ class HTTPServer:
                 while tb is not None:
                     self._logger.error(
                         f"{exc.__class__.__name__} "
-                        f"@ {tb.tb_frame.f_code.co_filename}:{tb.tb_lineno}"
+                        f"@ {tb.tb_frame.f_code.co_filename}:{tb.tb_lineno} "
+                        f"Reason: {exc}"
                     )
                     tb = tb.tb_next
                 
