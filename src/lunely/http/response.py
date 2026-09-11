@@ -148,3 +148,20 @@ class JSONResponse(HTTPResponse):
         self.set_content_type(
             ContentType.APPLICATION_JSON
         )
+        
+class InternalErrorResponse(HTTPResponse):
+    def __init__(
+        self,
+        version: str = "HTTP/1.1",
+        status: str = "500", 
+        reason_phrase: str = "Internal Server Error", 
+        headers: dict[str, str] | None = None,
+        body: str | None = None
+    ):
+        super().__init__(version, status, reason_phrase, headers, body)
+        
+        if not body:    
+            self.set_content_type(
+                ContentType.TEXT_PLAIN
+            )
+            self.set_body("Internal Server Error")
