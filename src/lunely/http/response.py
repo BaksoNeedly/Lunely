@@ -100,8 +100,9 @@ class HTTPResponse:
     def get_body(self) -> str:
         return self._body
 
-    def set_body(self, body: str):
+    def set_body(self, body: str) -> Self:
         self._body = body
+        return self
 
     def get_response(self) -> str:
         return self.build().decode(app_config.ENCODING)
